@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>田中メソッド・判定テスト 第83-84階段 (441-480)</title>
+    <style>
+        body { font-family: 'Meiryo', sans-serif; text-align: center; background-color: #f5f5dc; padding: 20px; color: #2c3e50; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        #display-area { 
+            background: white; height: 450px; margin: 20px auto; width: 100%; 
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            display: flex; justify-content: space-around; align-items: center; 
+            border: 6px solid #3498db; padding: 20px; position: relative;
+        }
+        .box { width: 48%; }
+        #meaning { font-size: 70px; font-weight: bold; color: #2c3e50; }
+        #word-area { font-size: 75px; font-weight: bold; color: #e74c3c; line-height: 1.1; }
+        #progress { position: absolute; bottom: 20px; width: 100%; font-size: 24px; color: #34495e; font-weight: bold; }
+        .controls { margin: 20px; padding: 20px; background: #fff; border-radius: 15px; border: 2px solid #3498db; display: flex; align-items: center; }
+        .control-left { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .control-right { text-align: right; border-left: 2px dashed #bdc3c7; padding-left: 30px; min-width: 250px; }
+        .time-display { font-size: 45px; font-weight: bold; color: #c0392b; font-family: 'Courier New', monospace; }
+        .judge-number { color: #2980b9; font-size: 45px; margin: 0 10px; min-width: 50px; text-align: center; }
+        button { font-size: 18px; padding: 12px 24px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 10px; margin: 5px; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .btn-test { background: #e67e22; }
+        .btn-mode { background: #34495e; width: 100%; height: 50px; }
+        .btn-stop { background: #95a5a6; }
+        .btn-voice-select { background: #7f8c8d; font-size: 14px; padding: 8px 15px; }
+        .mode-active { background-color: #2c3e50 !important; color: #f1c40f !important; border: 2px solid #f1c40f; }
+        .voice-active { background-color: #27ae60 !important; }
+        #test-options { margin-top: 15px; display: none; width: 95%; gap: 20px; background: #ecf0f1; padding: 20px; border-radius: 15px; }
+        .part-left { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .part-right { flex: 3; border-left: 1px solid #bdc3c7; padding-left: 20px; display: flex; align-items: center; }
+        #kb-input { font-size: 24px; padding: 10px; width: 90%; border-radius: 10px; border: 2px solid #3498db; }
+        .voice-controls { margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>田中メソッド・判定テスト 第83-84階段 (441-480)</h1>
+    <div class="controls">
+        <div class="control-left">
+            <div style="margin-bottom: 10px; font-weight: bold;">
+                スピード選択:
+                <select id="level-select" style="font-size: 18px; padding: 8px;">
+                    <option value="4.0">1級 (40秒)</option>
+                    <option value="5.0">2級 (50秒)</option>
+                    <option value="6.0">3級 (60秒)</option>
+                    <option value="7.0">4級 (70秒)</option>
+                    <option value="8.0">5級 (80秒)</option>
+                    <option value="9.0">6級 (90秒)</option>
+                    <option value="10.0">7級 (100秒)</option>
+                    <option value="11.0">8級 (110秒)</option>
+                    <option value="12.0">9級 (120秒)</option>
+                    <option value="13.0" selected>10級 (130秒)</option>
+                </select>
+            </div>
+            <div class="voice-controls">
+                <button id="v-off" class="btn-voice-select voice-active" onclick="setVoiceMode('off')">VOICE OFF</button>
+                <button id="v-male" class="btn-voice-select" onclick="setVoiceMode('male')">Male</button>
+                <button id="v-female" class="btn-voice-select" onclick="setVoiceMode('female')">Female</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="startTraining()">トレーニング開始</button>
+                <button class="btn-test" onclick="toggleTestMenu()">確認テスト選択</button>
+                <button class="btn-stop" onclick="stopAll()">停止</button>
+            </div>
+            <div id="test-options">
+                <div class="part-left">
+                    <button id="mode-voice" class="btn-mode" onclick="initMic()">英語発音</button>
+                    <button id="mode-kb" class="btn-mode" onclick="setKeyboard()">スペル入力</button>
+                </div>
+                <div class="part-right">
+                    <input type="text" id="kb-input" placeholder="441問目を打って開始" onkeydown="handleKbInput(event)" disabled>
+                </div>
+            </div>
+        </div>
+        <div class="control-right">
+            <div class="time-display" id="timer">00.00</div>
+            <div style="font-size: 24px; font-weight: bold;">判定<span id="judge-num" class="judge-number">--</span>級</div>
+        </div>
+    </div>
+    <div id="display-area">
+        <div class="box"><div id="meaning">READY</div></div>
+        <div class="box"><div id="word-area">---</div></div>
+        <div id="progress">0 / 40</div>
+    </div>
+</div>
+
+<script>
+    // 第83階段(441-460)と第84階段(461-480)を統合
+    const masterWords = [
+        {id:441, eng: "deny", jpn: "～を否定する"},
+        {id:442, eng: "destroy", jpn: "～を破壊する"},
+        {id:443, eng: "audience", jpn: "聴衆・観客"},
+        {id:444, eng: "race", jpn: "人種・競争"},
+        {id:445, eng: "conflict", jpn: "紛争・衝突"},
+        {id:446, eng: "debate", jpn: "討論・論争"},
+        {id:447, eng: "struggle", jpn: "苦闘・もがき"},
+        {id:448, eng: "strategy", jpn: "戦略"},
+        {id:449, eng: "progress", jpn: "進歩・前進"},
+        {id:450, eng: "principle", jpn: "原理・原則"},
+        {id:451, eng: "element", jpn: "要素・成分"},
+        {id:452, eng: "origin", jpn: "起源・生まれ"},
+        {id:453, eng: "birth", jpn: "誕生・出産"},
+        {id:454, eng: "ancestor", jpn: "先祖・祖先"},
+        {id:455, eng: "cell", jpn: "細胞・小部屋"},
+        {id:456, eng: "gene", jpn: "遺伝子"},
+        {id:457, eng: "scene", jpn: "場面・現場"},
+        {id:458, eng: "trend", jpn: "傾向・流行"},
+        {id:459, eng: "traffic", jpn: "交通（量）"},
+        {id:460, eng: "track", jpn: "通り道・足跡"},
+        {id:461, eng: "series", jpn: "連続・シリーズ"},
+        {id:462, eng: "context", jpn: "背景・状況・文脈"},
+        {id:463, eng: "background", jpn: "経歴・背景"},
+        {id:464, eng: "basis", jpn: "基礎・根拠"},
+        {id:465, eng: "status", jpn: "地位・身分"},
+        {id:466, eng: "volunteer", jpn: "ボランティア・志願者"},
+        {id:467, eng: "staff", jpn: "職員・スタッフ"},
+        {id:468, eng: "duty", jpn: "義務・職務"},
+        {id:469, eng: "labor", jpn: "労働"},
+        {id:470, eng: "reward", jpn: "報酬・褒美"},
+        {id:471, eng: "aim", jpn: "目的・ねらい"},
+        {id:472, eng: "fun", jpn: "楽しみ・おもしろいもの"},
+        {id:473, eng: "crowd", jpn: "群衆"},
+        {id:474, eng: "revolution", jpn: "革命"},
+        {id:475, eng: "poverty", jpn: "貧困"},
+        {id:476, eng: "consequence", jpn: "結果・重要さ"},
+        {id:477, eng: "sequence", jpn: "連続・順序"},
+        {id:478, eng: "complex", jpn: "複合体・複雑な"},
+        {id:479, eng: "complicated", jpn: "複雑な"},
+        {id:480, eng: "false", jpn: "偽の・誤った"}
+    ];
+
+    let timerInterval = null, trainingInterval = null;
+    let index = 0, startTime = 0, selectedMode = "", isRunning = false;
+    let voiceMode = "off"; 
+    const synth = window.speechSynthesis;
+    let voices = [];
+
+    function loadVoices() { voices = synth.getVoices(); }
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
+    if (recognition) {
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.onstart = () => {
+            if (selectedMode === 'voice' && !isRunning) {
+                document.getElementById('mode-voice').innerText = "判定中...";
+                document.getElementById('mode-voice').classList.add('mode-active');
+                executeTest(); 
+            }
+        };
+        recognition.onresult = (e) => {
+            if (!isRunning || selectedMode !== "voice") return;
+            const text = e.results[e.results.length - 1][0].transcript.trim().toLowerCase();
+            checkAnswer(text);
+        };
+    }
+
+    function setVoiceMode(mode) {
+        voiceMode = mode;
+        document.querySelectorAll('.btn-voice-select').forEach(btn => btn.classList.remove('voice-active'));
+        if(mode === 'off') document.getElementById('v-off').classList.add('voice-active');
+        if(mode === 'male') document.getElementById('v-male').classList.add('voice-active');
+        if(mode === 'female') document.getElementById('v-female').classList.add('voice-active');
+    }
+
+    function toggleTestMenu() { stopAll(); document.getElementById('test-options').style.display = 'flex'; }
+
+    function initMic() {
+        selectedMode = "voice";
+        document.getElementById('kb-input').disabled = true;
+        try { recognition.start(); } catch(e) { if (!isRunning) executeTest(); }
+    }
+
+    function setKeyboard() {
+        selectedMode = "keyboard";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+        document.getElementById('mode-voice').innerText = "英語発音";
+        document.getElementById('mode-voice').classList.remove('mode-active');
+        document.getElementById('mode-kb').classList.add('mode-active');
+        document.getElementById('kb-input').disabled = false;
+        document.getElementById('kb-input').placeholder = "441問目を打って開始";
+        document.getElementById('kb-input').focus();
+        document.getElementById('meaning').innerText = masterWords[0].jpn;
+        document.getElementById('progress').innerText = "1 / 40";
+    }
+
+    function executeTest() {
+        index = 0; isRunning = true; startTime = Date.now();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (isRunning) {
+                document.getElementById('timer').innerText = ((Date.now() - startTime) / 1000).toFixed(2);
+            }
+        }, 50);
+        showStep(true);
+    }
+
+    function handleKbInput(e) {
+        if (e.key === 'Enter') {
+            const input = e.target.value.trim().toLowerCase();
+            if (!isRunning && selectedMode === "keyboard") {
+                if (input === masterWords[0].eng.toLowerCase()) {
+                    executeTest();
+                    index = 1;
+                    showStep(true);
+                }
+            } else if (isRunning) {
+                checkAnswer(input);
+            }
+            e.target.value = "";
+        }
+    }
+
+    function checkAnswer(input) {
+        if (!isRunning) return;
+        if (input.includes(masterWords[index].eng.toLowerCase())) {
+            index++;
+            if (index >= 40) { finishTest(); } else { showStep(true); }
+        }
+    }
+
+    function finishTest() {
+        isRunning = false;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        const finalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        document.getElementById('timer').innerText = finalTime;
+        // 40問判定基準に合わせる（20問×2）
+        let base = selectedMode === 'keyboard' ? parseFloat(finalTime) / 3 : parseFloat(finalTime);
+        document.getElementById('judge-num').innerText = calculateLevel(base);
+        document.getElementById('meaning').innerText = "合格！";
+        document.getElementById('word-area').innerText = "FINISH";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+    }
+
+    function calculateLevel(sec) {
+        // 40問の閾値（40秒〜130秒）
+        const thresholds = [40, 50, 60, 70, 80, 90, 100, 110, 120, 130];
+        for (let i = 0; i < thresholds.length; i++) if (sec <= thresholds[i]) return i + 1;
+        return "外";
+    }
+
+    function showStep(isTest) {
+        const word = masterWords[index];
+        document.getElementById('meaning').innerText = word.jpn;
+        document.getElementById('progress').innerText = `${index + 1} / 40`;
+        document.getElementById('word-area').innerText = isTest ? "???" : word.eng;
+        if (!isTest && voiceMode !== "off") speak(word.eng);
+    }
+
+    function startTraining() {
+        stopAll();
+        index = 0;
+        showStep(false);
+        const speed = parseFloat(document.getElementById('level-select').value) * 1000 / 2;
+        trainingInterval = setInterval(() => {
+            index++;
+            if (index >= 40) {
+                clearInterval(trainingInterval);
+                trainingInterval = null;
+                document.getElementById('meaning').innerText = "終了";
+                document.getElementById('word-area').innerText = "FINISH";
+            } else { showStep(false); }
+        }, speed);
+    }
+
+    function stopAll() {
+        isRunning = false;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (trainingInterval) { clearInterval(trainingInterval); trainingInterval = null; }
+        if (recognition) try { recognition.stop(); } catch(e){}
+        synth.cancel();
+        document.getElementById('meaning').innerText = "READY";
+        document.getElementById('word-area').innerText = "---";
+        document.getElementById('progress').innerText = "0 / 40";
+        document.getElementById('timer').innerText = "00.00";
+        document.getElementById('judge-num').innerText = "--";
+        document.getElementById('test-options').style.display = 'none';
+        document.getElementById('mode-voice').innerText = "英語発音";
+        document.getElementById('mode-voice').classList.remove('mode-active');
+        document.getElementById('mode-kb').classList.remove('mode-active');
+        document.getElementById('kb-input').disabled = true;
+    }
+
+    function speak(text) {
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        let targetVoice = null;
+        if (voiceMode === 'male') {
+            targetVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Male') || v.name.includes('Guy') || v.name.includes('David')));
+        } else if (voiceMode === 'female') {
+            targetVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google US English')));
+        }
+        if (targetVoice) utter.voice = targetVoice;
+        utter.lang = 'en-US';
+        synth.speak(utter);
+    }
+</script>
+</body>
+</html>

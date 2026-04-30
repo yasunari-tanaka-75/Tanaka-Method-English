@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ターゲット1400 進度管理表 (ステップアップ版)</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #000; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #1a365d; font-size: 32px; margin-bottom: 20px; border-bottom: 4px solid #1a365d; padding-bottom: 10px; }
+        
+        .grid-header, .row {
+            display: grid;
+            grid-template-columns: 120px 300px 220px 220px; 
+            padding: 15px;
+            align-items: center;
+            text-align: center;
+            font-size: 22px; /* 文字を大きく設定 */
+        }
+        .grid-header { background-color: #1a365d; color: white; font-weight: bold; border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 10; }
+        .scroll-area { max-height: 75vh; overflow-y: auto; border: 2px solid #1a365d; }
+        
+        .row { border-bottom: 1px solid #cbd5e0; }
+        .row:nth-child(even) { background-color: #edf2f7; }
+        
+        .id-num { font-size: 28px; font-weight: bold; color: #1a365d; }
+        .range-text { font-weight: bold; color: #2d3748; }
+
+        .btn-save { background-color: #2f855a; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        .btn-launch { background-color: #2b6cb0; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; margin-left: 10px; }
+        
+        .completed { background-color: #c6f6d5 !important; } /* 終わった行をより明るい緑に */
+        input[type="date"] { padding: 10px; font-size: 20px; border: 2px solid #718096; border-radius: 6px; background: #fff; cursor: pointer; }
+        
+        #stats { text-align: center; font-size: 26px; font-weight: bold; padding: 15px; background: #bee3f8; border-radius: 8px; margin-bottom: 20px; color: #2c5282; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>英単語 進度管理表 (1-160)</h1>
+    <div id="stats">達成済み: 0 / 160 セット</div>
+    
+    <div class="grid-header">
+        <div>ID</div>
+        <div>単語範囲 (開始～終了)</div>
+        <div>達成記録</div>
+        <div>操作</div>
+    </div>
+    <div class="scroll-area" id="list-container"></div>
+</div>
+
+<script>
+    const container = document.getElementById('list-container');
+    let completedCount = 0;
+
+    // 単語範囲を計算する関数 (ご提示いただいたルールを適用)
+    function getRangeText(id) {
+        let count = 0;
+        let start = 0;
+
+        if (id <= 60) { count = 10; start = (id - 1) * count + 1; }
+        else if (id <= 90) { count = 20; start = (id - 61) * count + 1; }
+        else if (id <= 110) { count = 30; start = (id - 91) * count + 1; }
+        else if (id <= 125) { count = 40; start = (id - 111) * count + 1; }
+        else if (id <= 137) { count = 50; start = (id - 126) * count + 1; }
+        else if (id <= 147) { count = 60; start = (id - 138) * count + 1; }
+        else if (id <= 153) { count = 100; start = (id - 148) * count + 1; }
+        else if (id <= 157) { count = 150; start = (id - 154) * count + 1; }
+        else if (id <= 159) { count = 300; start = (id - 158) * count + 1; }
+        else { return "全範囲 1 ～ 600"; }
+
+        return `No. ${start} ～ ${start + count - 1}`;
+    }
+
+    for (let i = 1; i <= 160; i++) {
+        const savedDate = localStorage.getItem('progress_date_' + i) || '';
+        if(savedDate) completedCount++;
+
+        const row = document.createElement('div');
+        row.className = 'row' + (savedDate ? ' completed' : '');
+        
+        const rangeText = getRangeText(i);
+
+        row.innerHTML = `
+            <div class="id-num">${i}</div>
+            <div class="range-text">${rangeText}</div>
+            <div><input type="date" id="date-${i}" value="${savedDate}"></div>
+            <div>
+                <button class="btn-save" onclick="save(${i})">保存</button>
+                <button class="btn-launch" onclick="launch(${i})">起動</button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    document.getElementById('stats').innerText = `達成済み: ${completedCount} / 160 セット`;
+
+    function save(id) {
+        const val = document.getElementById('date-' + id).value;
+        if (val) {
+            localStorage.setItem('progress_date_' + id, val);
+        } else {
+            localStorage.removeItem('progress_date_' + id);
+        }
+        location.reload();
+    }
+
+    function launch(id) {
+        window.open(id + ".html", "_blank");
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>田中メソッド・判定テスト (151-300)</title>
+    <style>
+        body { font-family: 'Meiryo', sans-serif; text-align: center; background-color: #f5f5dc; padding: 20px; color: #2c3e50; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        #display-area { 
+            background: white; height: 450px; margin: 20px auto; width: 100%; 
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            display: flex; justify-content: space-around; align-items: center; 
+            border: 6px solid #3498db; padding: 20px; position: relative;
+        }
+        .box { width: 48%; }
+        #meaning { font-size: 70px; font-weight: bold; color: #2c3e50; }
+        #word-area { font-size: 75px; font-weight: bold; color: #e74c3c; line-height: 1.1; }
+        #progress { position: absolute; bottom: 20px; width: 100%; font-size: 24px; color: #34495e; font-weight: bold; }
+        .controls { margin: 20px; padding: 20px; background: #fff; border-radius: 15px; border: 2px solid #3498db; display: flex; align-items: center; }
+        .control-left { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .control-right { text-align: right; border-left: 2px dashed #bdc3c7; padding-left: 30px; min-width: 250px; }
+        .time-display { font-size: 45px; font-weight: bold; color: #c0392b; font-family: 'Courier New', monospace; }
+        .judge-number { color: #2980b9; font-size: 45px; margin: 0 10px; min-width: 50px; text-align: center; }
+        button { font-size: 18px; padding: 12px 24px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 10px; margin: 5px; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .btn-test { background: #e67e22; }
+        .btn-mode { background: #34495e; width: 100%; height: 50px; }
+        .btn-stop { background: #95a5a6; }
+        .btn-voice-select { background: #7f8c8d; font-size: 14px; padding: 8px 15px; }
+        .mode-active { background-color: #2c3e50 !important; color: #f1c40f !important; border: 2px solid #f1c40f; }
+        .voice-active { background-color: #27ae60 !important; }
+        #test-options { margin-top: 15px; display: none; width: 95%; gap: 20px; background: #ecf0f1; padding: 20px; border-radius: 15px; }
+        .part-left { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .part-right { flex: 3; border-left: 1px solid #bdc3c7; padding-left: 20px; display: flex; align-items: center; }
+        #kb-input { font-size: 24px; padding: 10px; width: 90%; border-radius: 10px; border: 2px solid #3498db; }
+        .voice-controls { margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>田中メソッド・判定テスト (151-300)</h1>
+    <div class="controls">
+        <div class="control-left">
+            <div style="margin-bottom: 10px; font-weight: bold;">
+                スピード選択:
+                <select id="level-select" style="font-size: 18px; padding: 8px;">
+                    <option value="2.0">1級 (30秒)</option>
+                    <option value="2.5">2級 (37.5秒)</option>
+                    <option value="3.0">3級 (45秒)</option>
+                    <option value="3.5">4級 (52.5秒)</option>
+                    <option value="4.0">5級 (60秒)</option>
+                    <option value="4.5">6級 (67.5秒)</option>
+                    <option value="5.0">7級 (75秒)</option>
+                    <option value="5.5">8級 (82.5秒)</option>
+                    <option value="6.0">9級 (90秒)</option>
+                    <option value="6.5" selected>10級 (97.5秒)</option>
+                </select>
+            </div>
+            <div class="voice-controls">
+                <button id="v-off" class="btn-voice-select voice-active" onclick="setVoiceMode('off')">VOICE OFF</button>
+                <button id="v-male" class="btn-voice-select" onclick="setVoiceMode('male')">Male</button>
+                <button id="v-female" class="btn-voice-select" onclick="setVoiceMode('female')">Female</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="startTraining()">トレーニング開始</button>
+                <button class="btn-test" onclick="toggleTestMenu()">確認テスト選択</button>
+                <button class="btn-stop" onclick="stopAll()">停止</button>
+            </div>
+            <div id="test-options">
+                <div class="part-left">
+                    <button id="mode-voice" class="btn-mode" onclick="initMic()">英語発音</button>
+                    <button id="mode-kb" class="btn-mode" onclick="setKeyboard()">スペル入力</button>
+                </div>
+                <div class="part-right">
+                    <input type="text" id="kb-input" placeholder="スペル入力用（Enterで開始）" onkeydown="handleKbInput(event)" disabled>
+                </div>
+            </div>
+        </div>
+        <div class="control-right">
+            <div class="time-display" id="timer">00.00</div>
+            <div style="font-size: 24px; font-weight: bold;">判定<span id="judge-num" class="judge-number">--</span>級</div>
+        </div>
+    </div>
+    <div id="display-area">
+        <div class="box"><div id="meaning">READY</div></div>
+        <div class="box"><div id="word-area">---</div></div>
+        <div id="progress">0 / 300</div>
+    </div>
+</div>
+
+<script>
+    const masterWords = [
+        {id:151, eng: "article", jpn: "記事・論文"}, {id:152, eng: "issue", jpn: "問題・発行"}, {id:153, eng: "theory", jpn: "理論"}, {id:154, eng: "evidence", jpn: "証拠"}, {id:155, eng: "experiment", jpn: "実験"},
+        {id:156, eng: "subject", jpn: "主題・科目"}, {id:157, eng: "government", jpn: "政府"}, {id:158, eng: "policy", jpn: "政策・方針"}, {id:159, eng: "education", jpn: "教育"}, {id:160, eng: "company", jpn: "会社"},
+        {id:161, eng: "colleague", jpn: "同僚"}, {id:162, eng: "industry", jpn: "産業・工業"}, {id:163, eng: "trade", jpn: "貿易・商売"}, {id:164, eng: "economy", jpn: "経済・節約"}, {id:165, eng: "customer", jpn: "顧客・客"},
+        {id:166, eng: "benefit", jpn: "利益・恩恵"}, {id:167, eng: "figure", jpn: "数字・姿・人物"}, {id:168, eng: "rate", jpn: "割合・速度"}, {id:169, eng: "chance", jpn: "可能性・偶然"}, {id:170, eng: "opportunity", jpn: "機会・好機"},
+        {id:171, eng: "project", jpn: "計画・事業"}, {id:172, eng: "practice", jpn: "練習・実践"}, {id:173, eng: "effort", jpn: "努力"}, {id:174, eng: "quality", jpn: "質・品質"}, {id:175, eng: "quantity", jpn: "量"},
+        {id:176, eng: "amount", jpn: "量・総計"}, {id:177, eng: "scientific", jpn: "科学的な"}, {id:178, eng: "political", jpn: "政治的な"}, {id:179, eng: "social", jpn: "社会的な"}, {id:180, eng: "official", jpn: "公式の・公の"},
+        {id:181, eng: "financial", jpn: "財政上の・金融の"}, {id:182, eng: "expensive", jpn: "高価な"}, {id:183, eng: "various", jpn: "様々な"}, {id:184, eng: "normal", jpn: "普通の・標準の"}, {id:185, eng: "familiar", jpn: "よく知られた"},
+        {id:186, eng: "appropriate", jpn: "適切な"}, {id:187, eng: "necessary", jpn: "必要な"}, {id:188, eng: "correct", jpn: "正しい・～を訂正する"}, {id:189, eng: "available", jpn: "利用可能な・入手可能な"}, {id:190, eng: "typical", jpn: "典型的な"},
+        {id:191, eng: "positive", jpn: "前向きな・肯定的な"}, {id:192, eng: "negative", jpn: "否定的な・消極的な"}, {id:193, eng: "passive", jpn: "受動的な・消極的な"}, {id:194, eng: "physical", jpn: "身体の・物理的な"}, {id:195, eng: "mental", jpn: "精神の"},
+        {id:196, eng: "rather", jpn: "かなり・むしろ"}, {id:197, eng: "instead", jpn: "代わりに"}, {id:198, eng: "otherwise", jpn: "さもなければ"}, {id:199, eng: "somehow", jpn: "どういうわけか・何とかして"}, {id:200, eng: "somewhat", jpn: "いくぶん・多少"},
+        {id:201, eng:"wonder", jpn:"かなと思う"}, {id:202, eng:"suppose", jpn:"思う"}, {id:203, eng:"imagine", jpn:"想像する"}, {id:204, eng:"regard", jpn:"見なす"}, {id:205, eng:"wish", jpn:"願う"},
+        {id:206, eng:"determine", jpn:"決定する"}, {id:207, eng:"express", jpn:"表現する"}, {id:208, eng:"represent", jpn:"表す"}, {id:209, eng:"identify", jpn:"特定する"}, {id:210, eng:"mention", jpn:"言及する"},
+        {id:211, eng:"solve", jpn:"解決する"}, {id:212, eng:"prove", jpn:"証明する"}, {id:213, eng:"communicate", jpn:"伝える"}, {id:214, eng:"respect", jpn:"尊敬する"}, {id:215, eng:"prefer", jpn:"〜を好む"},
+        {id:216, eng:"design", jpn:"設計する"}, {id:217, eng:"establish", jpn:"設立する"}, {id:218, eng:"found", jpn:"創設する"}, {id:219, eng:"publish", jpn:"出版する"}, {id:220, eng:"serve", jpn:"仕える"},
+        {id:221, eng:"supply", jpn:"供給する"}, {id:222, eng:"apply", jpn:"適用する・申し込む"}, {id:223, eng:"treat", jpn:"扱う"}, {id:224, eng:"search", jpn:"探す"}, {id:225, eng:"prepare", jpn:"準備する"},
+        {id:226, eng:"protect", jpn:"保護する"}, {id:227, eng:"pick", jpn:"摘む・選ぶ"}, {id:228, eng:"fit", jpn:"合う・適合する"}, {id:229, eng:"gain", jpn:"得る"}, {id:230, eng:"enter", jpn:"入る"},
+        {id:231, eng:"spread", jpn:"広がる・広げる"}, {id:232, eng:"advance", jpn:"進む・進める"}, {id:233, eng:"tend", jpn:"〜しがちである"}, {id:234, eng:"depend", jpn:"依存する・〜次第である"}, {id:235, eng:"exist", jpn:"存在する"},
+        {id:236, eng:"decline", jpn:"衰退する・断る"}, {id:237, eng:"decrease", jpn:"減る・減らす"}, {id:238, eng:"waste", jpn:"浪費する"}, {id:239, eng:"damage", jpn:"損害を与える"}, {id:240, eng:"suffer", jpn:"苦しむ・（苦痛を）受ける"},
+        {id:241, eng:"act", jpn:"行動する"}, {id:242, eng:"perform", jpn:"～を行う・演じる"}, {id:243, eng:"species", jpn:"（生物の）種"}, {id:244, eng:"variety", jpn:"多様性・種類"}, {id:245, eng:"degree", jpn:"程度・度"},
+        {id:246, eng:"range", jpn:"範囲"}, {id:247, eng:"standard", jpn:"基準・標準"}, {id:248, eng:"medium", jpn:"媒体・中間"}, {id:249, eng:"advantage", jpn:"利点"}, {id:250, eng:"task", jpn:"任務・仕事"},
+        {id:251, eng:"rest", jpn:"残り・休息"}, {id:252, eng:"purpose", jpn:"目的"}, {id:253, eng:"feature", jpn:"特徴"}, {id:254, eng:"factor", jpn:"要因"}, {id:255, eng:"shape", jpn:"形"},
+        {id:256, eng:"image", jpn:"像・印象"}, {id:257, eng:"detail", jpn:"詳細"}, {id:258, eng:"character", jpn:"性格・文字"}, {id:259, eng:"function", jpn:"機能"}, {id:260, eng:"structure", jpn:"構造"},
+        {id:261, eng:"ground", jpn:"地面・根拠"}, {id:262, eng:"influence", jpn:"影響"}, {id:263, eng:"disease", jpn:"病気"}, {id:264, eng:"pain", jpn:"苦痛・痛み"}, {id:265, eng:"medicine", jpn:"薬・医学"},
+        {id:266, eng:"death", jpn:"死"}, {id:267, eng:"fear", jpn:"恐怖"}, {id:268, eng:"memory", jpn:"記憶"}, {id:269, eng:"emotion", jpn:"感情"}, {id:270, eng:"movement", jpn:"動き・運動"},
+        {id:271, eng:"region", jpn:"地域、地方"}, {id:272, eng:"climate", jpn:"気候"}, {id:273, eng:"temperature", jpn:"温度、体温"}, {id:274, eng:"community", jpn:"地域社会"}, {id:275, eng:"population", jpn:"人口"},
+        {id:276, eng:"generation", jpn:"世代"}, {id:277, eng:"present", jpn:"現在の、出席して"}, {id:278, eng:"recent", jpn:"最近の"}, {id:279, eng:"current", jpn:"現在の、流れ"}, {id:280, eng:"ancient", jpn:"古代の"},
+        {id:281, eng:"previous", jpn:"前の、以前の"}, {id:282, eng:"serious", jpn:"重大な、本気の"}, {id:283, eng:"careful", jpn:"注意深い"}, {id:284, eng:"responsible", jpn:"責任がある"}, {id:285, eng:"active", jpn:"活動的な、積極的な"},
+        {id:286, eng:"afraid", jpn:"恐れて"}, {id:287, eng:"aware", jpn:"気づいて"}, {id:288, eng:"patient", jpn:"忍耐強い、患者"}, {id:289, eng:"whole", jpn:"全体の"}, {id:290, eng:"low", jpn:"低い"},
+        {id:291, eng:"huge", jpn:"巨大な"}, {id:292, eng:"blank", jpn:"空白の"}, {id:293, eng:"central", jpn:"中心の"}, {id:294, eng:"safe", jpn:"安全な"}, {id:295, eng:"wild", jpn:"野生の"},
+        {id:296, eng:"eventually", jpn:"結局は"}, {id:297, eng:"unfortunately", jpn:"不運にも"}, {id:298, eng:"seemingly", jpn:"一見したところ"}, {id:299, eng:"afterward", jpn:"その後"}, {id:300, eng:"altogether", jpn:"完全に、合計で"}
+    ];
+
+    let timerInterval = null, trainingInterval = null;
+    let index = 0, startTime = 0, selectedMode = "", isRunning = false;
+    let voiceMode = "off"; 
+    const synth = window.speechSynthesis;
+    let voices = [];
+
+    function loadVoices() { voices = synth.getVoices(); }
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
+    if (recognition) {
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.onstart = () => {
+            if (selectedMode === 'voice' && !isRunning) {
+                document.getElementById('mode-voice').innerText = "判定中...";
+                document.getElementById('mode-voice').classList.add('mode-active');
+                executeTest(); 
+            }
+        };
+        recognition.onresult = (e) => {
+            if (!isRunning || selectedMode !== "voice") return;
+            const text = e.results[e.results.length - 1][0].transcript.trim().toLowerCase();
+            checkAnswer(text);
+        };
+    }
+
+    function setVoiceMode(mode) {
+        voiceMode = mode;
+        document.querySelectorAll('.btn-voice-select').forEach(btn => btn.classList.remove('voice-active'));
+        if(mode === 'off') document.getElementById('v-off').classList.add('voice-active');
+        if(mode === 'male') document.getElementById('v-male').classList.add('voice-active');
+        if(mode === 'female') document.getElementById('v-female').classList.add('voice-active');
+    }
+
+    function toggleTestMenu() { stopAll(); document.getElementById('test-options').style.display = 'flex'; }
+
+    function initMic() {
+        selectedMode = "voice";
+        document.getElementById('kb-input').disabled = true;
+        try { recognition.start(); } catch(e) { if (!isRunning) executeTest(); }
+    }
+
+    function setKeyboard() {
+        selectedMode = "keyboard";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+        document.getElementById('mode-voice').innerText = "英語発音";
+        document.getElementById('mode-voice').classList.remove('mode-active');
+        document.getElementById('mode-kb').classList.add('mode-active');
+        document.getElementById('kb-input').disabled = false;
+        document.getElementById('kb-input').placeholder = "151問目を打って開始";
+        document.getElementById('kb-input').focus();
+        document.getElementById('meaning').innerText = masterWords[0].jpn;
+        document.getElementById('progress').innerText = "151 / 300";
+    }
+
+    function executeTest() {
+        index = 0; isRunning = true; startTime = Date.now();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (isRunning) {
+                document.getElementById('timer').innerText = ((Date.now() - startTime) / 1000).toFixed(2);
+            }
+        }, 50);
+        showStep(true);
+    }
+
+    function handleKbInput(e) {
+        if (e.key === 'Enter') {
+            const input = e.target.value.trim().toLowerCase();
+            if (!isRunning && selectedMode === "keyboard") {
+                if (input === masterWords[0].eng.toLowerCase()) {
+                    executeTest();
+                    index = 1;
+                    showStep(true);
+                }
+            } else if (isRunning) {
+                checkAnswer(input);
+            }
+            e.target.value = "";
+        }
+    }
+
+    function checkAnswer(input) {
+        if (!isRunning) return;
+        if (input.includes(masterWords[index].eng.toLowerCase())) {
+            index++;
+            if (index >= 150) { finishTest(); } else { showStep(true); }
+        }
+    }
+
+    function finishTest() {
+        isRunning = false;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        const finalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        document.getElementById('timer').innerText = finalTime;
+        
+        let base = selectedMode === 'keyboard' ? parseFloat(finalTime) / 3 : parseFloat(finalTime);
+        document.getElementById('judge-num').innerText = calculateLevel(base);
+        
+        document.getElementById('meaning').innerText = "合格！";
+        document.getElementById('word-area').innerText = "FINISH";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+    }
+
+    function calculateLevel(sec) {
+        // 150問用閾値設定（基準の15倍、1級は20秒*1.5=30秒）
+        const thresholds = [30, 37.5, 45, 52.5, 60, 67.5, 75, 82.5, 90, 97.5];
+        for (let i = 0; i < thresholds.length; i++) if (sec <= thresholds[i]) return i + 1;
+        return "外";
+    }
+
+    function showStep(isTest) {
+        const word = masterWords[index];
+        document.getElementById('meaning').innerText = word.jpn;
+        document.getElementById('progress').innerText = `${word.id} / 300`;
+        document.getElementById('word-area').innerText = isTest ? "???" : word.eng;
+        if (!isTest && voiceMode !== "off") speak(word.eng);
+    }
+
+    function startTraining() {
+        stopAll();
+        index = 0;
+        showStep(false);
+        const speed = parseFloat(document.getElementById('level-select').value) * 1000;
+        trainingInterval = setInterval(() => {
+            index++;
+            if (index >= 150) {
+                clearInterval(trainingInterval);
+                trainingInterval = null;
+                document.getElementById('meaning').innerText = "終了";
+                document.getElementById('word-area').innerText = "FINISH";
+            } else { showStep(false); }
+        }, speed);
+    }
+
+    function stopAll() {
+        isRunning = false;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (trainingInterval) { clearInterval(trainingInterval); trainingInterval = null; }
+        if (recognition) try { recognition.stop(); } catch(e){}
+        synth.cancel();
+        document.getElementById('meaning').innerText = "READY";
+        document.getElementById('word-area').innerText = "---";
+        document.getElementById('progress').innerText = "0 / 300";
+        document.getElementById('timer').innerText = "00.00";
+        document.getElementById('judge-num').innerText = "--";
+        document.getElementById('test-options').style.display = 'none';
+        document.getElementById('mode-voice').innerText = "英語発音";
+        document.getElementById('mode-voice').classList.remove('mode-active');
+        document.getElementById('mode-kb').classList.remove('mode-active');
+        document.getElementById('kb-input').disabled = true;
+    }
+
+    function speak(text) {
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        let targetVoice = null;
+        if (voiceMode === 'male') {
+            targetVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Male') || v.name.includes('Guy') || v.name.includes('David')));
+        } else if (voiceMode === 'female') {
+            targetVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google US English')));
+        }
+        if (targetVoice) utter.voice = targetVoice;
+        utter.lang = 'en-US';
+        synth.speak(utter);
+    }
+</script>
+</body>
+</html>
